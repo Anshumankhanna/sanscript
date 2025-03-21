@@ -1,4 +1,4 @@
-import { Stmt, Program, Expr, BinaryExpr, NumericLiteral, Identifier, NullLiteral } from "./ast.ts";
+import { Stmt, Program, Expr, BinaryExpr, NumericLiteral, Identifier, VarDeclaration, AssignmentExpr, Property, ObjectLiteral } from "./ast.ts";
 import { tokenize, Token, TokenType } from "./lexer.ts";
 
 export default class Parser {
@@ -28,6 +28,7 @@ export default class Parser {
 
 	// Orders of Prescidence
 	// AssignmentExpr
+	// ObjectExpr
 	// MemberExpr
 	// FunctionCall
 	// LogicalExpr
@@ -36,7 +37,36 @@ export default class Parser {
 	// MultiplicativeExpr
 	// UnaryExpr
 	// PrimaryExpr
-	
+
+	private parse_var_declaration(): Stmt {
+		const isConstant = this.eat().type === TokenType.Const;
+		const identifier = this.expect(TokenType.Identifier, "Expected identifier name following let | const keywords.").value;
+
+		if (this.at().type === TokenType.Semicolon) {
+			this.eat();    // expect semicolon.
+			if (isConstant) {
+				throw `Must assign value to constant expression. No value provided.`;
+			}
+
+			return {
+				kind: "VarDeclaration",
+				constant: false,
+				identifier
+			} as VarDeclaration;
+		}
+
+		this.expect(TokenType.Equals, "Expected equals token following identifier in var declaration.");
+
+		const declaration = {
+			kind: "VarDeclaration",
+			constant: isConstant,
+			identifier,
+			value: this.parse_expr(),
+		} as VarDeclaration;
+
+		this.expect(TokenType.Semicolon, "Variable declaration statements must end with semicolon.");
+		return declaration;
+	}
 	private parse_primary_expr(): Expr {
 		const tk = this.at().type;
 
@@ -47,13 +77,6 @@ export default class Parser {
 					kind: "Identifier",
 					symbol: this.eat().value
 				} as Identifier;
-			}
-			case TokenType.Null: {
-				this.eat();    // advance past null keyword.
-				return {
-					kind: "NullLiteral",
-					value: "null"
-				} as NullLiteral;
 			}
 			case TokenType.Number: {
 				return {
@@ -70,8 +93,6 @@ export default class Parser {
 				);    // closing paren
 				return value;
 			}
-			// case TokenType.CloseParen:
-			// case TokenType.EOF:
 			default: {
 				console.error("Unexpected token found during parsing!", this.at());
 				Deno.exit(1);
@@ -110,12 +131,79 @@ export default class Parser {
 
 		return left;
 	}
+	private parse_object_expr(): Expr {
+		if (this.at().type !== TokenType.OpenBrace) {
+			return this.parse_additive_expr();
+		}
+
+		this.eat();    // advance past open brace.
+		
+		const properties = new Array<Property>();
+
+		while (this.not_eof() && this.at().type !== TokenType.CloseBrace) {
+			const key = this.expect(TokenType.Identifier, "Object literal key expected.").value;
+			
+			// Allows shorthand key: pair -> { key, }
+			if (this.at().type === TokenType.Comma) {
+				this.eat();    // advance past comma
+				properties.push({ kind: "Property", key });
+				continue;
+			} // Allows shorthand key: pair -> { key }
+			else if (this.at().type === TokenType.CloseBrace) {
+				properties.push({ kind: "Property", key });
+				continue;
+			}
+
+			// { key: val }
+
+			this.expect(TokenType.Colon, "Missing colon following identifier in ObjectExpr.");
+
+			// We want to allow any expression as a value.
+			const value = this.parse_expr();
+
+			properties.push({ kind: "Property", key, value });
+
+			if (this.at().type !== TokenType.CloseBrace) {
+				this.expect(TokenType.Comma, "Expected comma or closing bracket following property.");
+			}
+		}
+
+		this.expect(TokenType.CloseBrace, "Object literal missing closing brace.");
+
+		return {
+			kind: "ObjectLiteral",
+			properties
+		} as ObjectLiteral;
+	}
+	private parse_assignment_expr(): Expr {
+		const left = this.parse_object_expr();
+
+		if (this.at().type === TokenType.Equals) {
+			this.eat();    // advance past equals sign.
+			const value = this.parse_assignment_expr();
+			return {
+				kind: "AssignmentExpr",
+				assigne: left,
+				value
+			} as AssignmentExpr;
+		}
+
+		// if 'left' is another expression.
+		return left;
+	}
 	private parse_expr(): Expr {
-		return this.parse_additive_expr();
+		return this.parse_assignment_expr();
 	}
 	private parse_stmt(): Stmt {
-		// skip to parse_expr;
-		return this.parse_expr();
+		switch (this.at().type) {
+			case TokenType.Let:
+			case TokenType.Const: {
+				return this.parse_var_declaration();
+			}
+			default: {
+				return this.parse_expr();
+			}
+		}
 	}
 
 	public produceAST(sourceCode: string): Program {

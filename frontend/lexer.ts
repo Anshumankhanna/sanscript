@@ -1,23 +1,30 @@
 export enum TokenType {
 	// Literal Types.
-	Null,
 	Number,
 	Identifier,
 
 	// Keywords.
 	Let,
+	Const,
 
 	// Grouping * Operators.
 	BinaryOperator,
 	Equals,
-	OpenParen,
-	CloseParen,
+	Comma,
+	Colon,
+	Semicolon,
+	OpenParen,    // (
+	CloseParen,    // )
+	OpenBrace,    // {
+	CloseBrace,    // }
+	OpenBracket,    // [
+	CloseBracket,    // ]
 	EOF // Signifies the end of file.
 };
 
 const KEYWORDS: Record<string, TokenType> = {
 	let: TokenType.Let,
-	null: TokenType.Null
+	const: TokenType.Const
 }
 
 export interface Token {
@@ -27,7 +34,7 @@ export interface Token {
 
 // must handle 'value' here better'.
 function token(value = "", type: TokenType): Token {
-	return { value, type };
+	return { type, value };
 }
 
 function isaplha(src: string): boolean {
@@ -43,7 +50,7 @@ function isint(str: string): boolean {
 
 // there are more cases to handle here.
 function isskippable(str: string): boolean {
-	return str === " " || str === "\n" || str === "\t";
+	return str === " " || str === "\n" || str === "\t" || str === "\r";
 }
 
 export function tokenize(sourceCode: string): Token[] {
@@ -62,6 +69,22 @@ export function tokenize(sourceCode: string): Token[] {
 				tokens.push(token(src.shift(), TokenType.CloseParen));
 				break;
 			}
+			case "{": {
+				tokens.push(token(src.shift(), TokenType.OpenBrace));
+				break;
+			}
+			case "}": {
+				tokens.push(token(src.shift(), TokenType.CloseBrace));
+				break;
+			}
+			case "[": {
+				tokens.push(token(src.shift(), TokenType.OpenBracket));
+				break;
+			}
+			case "]": {
+				tokens.push(token(src.shift(), TokenType.CloseBracket));
+				break;
+			}
 			case "+":
 			case "-":
 			case "*":
@@ -72,6 +95,18 @@ export function tokenize(sourceCode: string): Token[] {
 			}
 			case "=": {
 				tokens.push(token(src.shift(), TokenType.Equals));
+				break;
+			}
+			case ",": {
+				tokens.push(token(src.shift(), TokenType.Comma));
+				break;
+			}
+			case ":": {
+				tokens.push(token(src.shift(), TokenType.Colon));
+				break;
+			}
+			case ";": {
+				tokens.push(token(src.shift(), TokenType.Semicolon));
 				break;
 			}
 			default: {
