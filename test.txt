@@ -8,3 +8,7 @@ const obj = {
 		bar: true
 	},
 };
+
+// Member expressions
+let f = object.complex.bar;
+foo = obj.foo + 5
