@@ -11,6 +11,7 @@ export enum TokenType {
 	BinaryOperator,
 	Equals,
 	Comma,
+	Dot,
 	Colon,
 	Semicolon,
 	OpenParen,    // (
@@ -99,6 +100,10 @@ export function tokenize(sourceCode: string): Token[] {
 			}
 			case ",": {
 				tokens.push(token(src.shift(), TokenType.Comma));
+				break;
+			}
+			case ".": {
+				tokens.push(token(src.shift(), TokenType.Dot));
 				break;
 			}
 			case ":": {
