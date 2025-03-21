@@ -6,6 +6,7 @@ export enum TokenType {
 	// Keywords.
 	Let,
 	Const,
+	Fn,    // fn
 
 	// Grouping * Operators.
 	BinaryOperator,
@@ -25,8 +26,9 @@ export enum TokenType {
 
 const KEYWORDS: Record<string, TokenType> = {
 	let: TokenType.Let,
-	const: TokenType.Const
-}
+	const: TokenType.Const,
+	fn: TokenType.Fn
+};
 
 export interface Token {
 	value: string;
@@ -133,19 +135,18 @@ export function tokenize(sourceCode: string): Token[] {
 						identifier += src.shift();
 					}
 
-					/* // check for reserved keywords,
+					// check for reserved keywords,
 					// if the identifier is a keyword then 'KEYWORDS[identifier]' returns some 'TokenType' otherwise it will return 'undefined',
 					// however, we handling 'undefined' by using 'nullish operator' which would just give 'TokenType.Identifier' as the argument to the function in this case.
-					tokens.push(token(identifier, KEYWORDS[identifier] ?? TokenType.Identifier)); */
+					tokens.push(token(identifier, KEYWORDS[identifier] ?? TokenType.Identifier)); 
 
-					const reserved = KEYWORDS[identifier];
+					// const reserved = KEYWORDS[identifier];
 
-					
-					if (typeof reserved === "number") {
-						tokens.push(token(identifier, reserved));
-					} else {
-						tokens.push(token(identifier, TokenType.Identifier));
-					}
+					// if (typeof reserved === "number") {
+					// 	tokens.push(token(identifier, reserved));
+					// } else {
+					// 	tokens.push(token(identifier, TokenType.Identifier));
+					// }
 				} else if (isskippable(src[0])) {
 					src.shift();    // SKIP THE CURRENT CHARACTER
 				} else {
