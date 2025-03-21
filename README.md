@@ -7,7 +7,7 @@ The name of the language has two meanings that signify its nature and purpose:
 ## What can it do?
 
 Currently the language has just birthed and as I learn more about languages it will get more new features.\
-As of now it is a general scripting language that is based on typescript.\
+As of now it is a general scripting language that is based on typescript and Deno.\
 In future, it will get more features and this won't be an interpreter, rather a compiler.
 
 ## How can we use it now?
